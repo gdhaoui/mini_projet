@@ -9,26 +9,28 @@
 #include <audio_processing.h>
 #include <arm_math.h>
 #include <arm_const_structs.h>
-#include <leds.h>
+
+
 
 #define MIN_VALUE_THRESHOLD	15000
 
 
 #define MIN_FREQ		10	//we don't analyze before this index to not use resources for nothing
-#define FREQ_GO		    16	//250Hz
-#define FREQ_STOP		18  //300Hz
+#define FREQ_GO	   		16	//250Hz
+#define FREQ_STOP		19  //300Hz
 #define FREQ_LEFT		22	//350Hz
 #define FREQ_RIGHT		25	//400HZ
-#define FREQ_ARC_L		28  //450Hz
+#define FREQ_ARC_L		29  //450Hz
 #define FREQ_ARC_R		32  //500Hz
 #define FREQ_CONTINUE	35  //550Hz
 #define FREQ_DEC_RAD	38  //600Hz
-#define FREQ_INC_RAD	41	//650Hz
+#define FREQ_INC_RAD	42	//650Hz
 #define FREQ_BACK		45 	//700Hz
 #define MAX_FREQ		50//e don't analyze after this index to not use resources for nothing
 
-int etat=GO;
+int state_micro=GO_MICRO_STATE;
 int command=NOTHING;
+int old_command=NOTHING;
 /*
 *	Simple function used to detect the highest value in a buffer
 *	and to execute a motor command depending on it
@@ -52,15 +54,15 @@ void sound_for_command(float* data){
 			max_norm_index = i;
 		}
 	}
-	switch(etat)
+	switch(state_micro)
 	{
-		case GO:
+		case GO_MICRO_STATE:
 			if(max_norm_index >= (FREQ_GO-1) && max_norm_index <= (FREQ_GO+1)){
-				command=START;
+				command=GO_COMMAND;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_STOP-1) && max_norm_index <= (FREQ_STOP+1)){
-				command=STOP;
+				command=STOP_COMMAND;
 				break;
 			}
 			else{
@@ -68,7 +70,7 @@ void sound_for_command(float* data){
 				break;
 			}
 
-		case STOP:
+		case STOP_MICRO_STATE:
 			if(max_norm_index >= (FREQ_LEFT-1) && max_norm_index <= (FREQ_LEFT+1)){
 				command=LEFT;
 				break;
@@ -83,10 +85,12 @@ void sound_for_command(float* data){
 			}
 			else if(max_norm_index >= (FREQ_ARC_L-1) && max_norm_index <= (FREQ_ARC_L+1)){
 				command=TURN_ARC_LEFT;
+				old_command=TURN_ARC_LEFT;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_ARC_L-1) && max_norm_index <= (FREQ_ARC_L+1)){
 				command=TURN_ARC_RIGHT;
+				old_command=TURN_ARC_LEFT;
 				break;
 			}
 			else{
@@ -94,7 +98,7 @@ void sound_for_command(float* data){
 				break;
 			}
 
-		case ARC:
+		case ARC_MICRO_STATE:
 			if(max_norm_index >= (FREQ_CONTINUE-1) && max_norm_index <= (FREQ_CONTINUE+1)){
 				command=CONTINUE;
 				break;
@@ -111,6 +115,10 @@ void sound_for_command(float* data){
 				command=NOTHING;
 				break;
 			}
+
+		case NOT_HEARING:
+			command=NOTHING;
+			break;
 
 	}
 }
@@ -167,13 +175,16 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		sound_for_command(micLeft_output);
 	}
 }
-void set_etat(char value)
+void set_state_micro(char value)
 {
-	etat=value;
+	state_micro=value;
 }
-char get_command(void)
+unsigned int get_command(void)
 {
 	return command;
 }
-
+unsigned int get_old_command(void)
+{
+	return old_command;
+}
 

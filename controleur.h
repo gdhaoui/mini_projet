@@ -1,17 +1,12 @@
-
-
 #ifndef CONTROLEUR_H_
 #define CONTROLEUR_H_
 
-void move_forward_steps(int steps);
-void move_forward(void);
-void turn_left_arc(float radius);
-void turn_right_arc(float radius);
-void turn_left_arc_steps(int steps, float radius, int speed);
-void turn_right_arc_steps(int steps, float radius, int speed);
-void motor_stop(void);
-void turn_left(void);
-void turn_right(void);
-void turn_right_angle(char angle);
-void turn_left_angle(char angle) ;
+enum state_robot
+{
+	GO_STATE_ROBOT=0,
+	STOP_STATE_ROBOT=1,
+	ARC_STATE_ROBOT=2,
+	BACK_STATE_ROBOT=3
+};
+void initialiser_controleur(void);
 #endif /* CONTROLEUR_H_ */
