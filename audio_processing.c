@@ -25,7 +25,8 @@
 #define FREQ_CONTINUE	35  //550Hz
 #define FREQ_DEC_RAD	38  //600Hz
 #define FREQ_INC_RAD	42	//650Hz
-#define FREQ_BACK		45 	//700Hz
+#define FREQ_BACK		27 	//422Hz
+#define FREQ_RUN		49	//766Hz
 #define MAX_FREQ		50//e don't analyze after this index to not use resources for nothing
 
 int state_micro=GO_MICRO_STATE;
@@ -59,10 +60,12 @@ void sound_for_command(float* data){
 		case GO_MICRO_STATE:
 			if(max_norm_index >= (FREQ_GO-1) && max_norm_index <= (FREQ_GO+1)){
 				command=GO_COMMAND;
+				old_command=GO_COMMAND;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_STOP-1) && max_norm_index <= (FREQ_STOP+1)){
 				command=STOP_COMMAND;
+
 				break;
 			}
 			else{
@@ -73,14 +76,17 @@ void sound_for_command(float* data){
 		case STOP_MICRO_STATE:
 			if(max_norm_index >= (FREQ_LEFT-1) && max_norm_index <= (FREQ_LEFT+1)){
 				command=LEFT;
+				old_command=LEFT;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_RIGHT-1) && max_norm_index <= (FREQ_RIGHT+1)){
 				command=RIGHT;
+				old_command=RIGHT;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_BACK-1) && max_norm_index <= (FREQ_BACK+1)){
 				command=REVERSE_WAY;
+
 				break;
 			}
 			else if(max_norm_index >= (FREQ_ARC_L-1) && max_norm_index <= (FREQ_ARC_L+1)){
@@ -93,6 +99,10 @@ void sound_for_command(float* data){
 				old_command=TURN_ARC_LEFT;
 				break;
 			}
+			else if(max_norm_index >= (FREQ_RUN-1) && max_norm_index <= (FREQ_RUN+1)){
+				command=RUN_COMMAND;
+				break;
+						}
 			else{
 				command=NOTHING;
 				break;

@@ -23,7 +23,8 @@ enum command
 	TURN_ARC_RIGHT=7,
 	CONTINUE=8,
 	DEC_RAD=9,
-	INC_RAD=10
+	INC_RAD=10,
+	RUN_COMMAND=11
 };
 
 void set_state_micro(char value);
