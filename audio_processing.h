@@ -18,13 +18,12 @@ enum command
 	STOP_COMMAND=2,
 	LEFT=3,
 	RIGHT=4,
-	REVERSE_WAY=5,
+	REVERSE_WAY_COMMAND=5,
 	TURN_ARC_LEFT=6,
 	TURN_ARC_RIGHT=7,
-	CONTINUE=8,
-	DEC_RAD=9,
-	INC_RAD=10,
-	RUN_COMMAND=11
+	DEC_RAD=8,
+	INC_RAD=9,
+	CONTINUE=10
 };
 
 void set_state_micro(char value);

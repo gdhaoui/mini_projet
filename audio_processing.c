@@ -1,12 +1,6 @@
-#include "ch.h"
-#include "hal.h"
-#include <main.h>
-#include <usbcfg.h>
-#include <chprintf.h>
 
-#include <motors.h>
-#include <audio/microphone.h>
-#include <audio_processing.h>
+#include "audio/microphone.h"
+#include "audio_processing.h"
 #include <arm_math.h>
 #include <arm_const_structs.h>
 
@@ -22,11 +16,10 @@
 #define FREQ_RIGHT		25	//400HZ
 #define FREQ_ARC_L		29  //450Hz
 #define FREQ_ARC_R		32  //500Hz
-#define FREQ_CONTINUE	35  //550Hz
 #define FREQ_DEC_RAD	38  //600Hz
 #define FREQ_INC_RAD	42	//650Hz
 #define FREQ_BACK		27 	//422Hz
-#define FREQ_RUN		49	//766Hz
+#define FREQ_CONTINUE	35  //550Hz
 #define MAX_FREQ		50//e don't analyze after this index to not use resources for nothing
 
 int state_micro=GO_MICRO_STATE;
@@ -60,7 +53,6 @@ void sound_for_command(float* data){
 		case GO_MICRO_STATE:
 			if(max_norm_index >= (FREQ_GO-1) && max_norm_index <= (FREQ_GO+1)){
 				command=GO_COMMAND;
-				old_command=GO_COMMAND;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_STOP-1) && max_norm_index <= (FREQ_STOP+1)){
@@ -74,18 +66,20 @@ void sound_for_command(float* data){
 			}
 
 		case STOP_MICRO_STATE:
+			if(max_norm_index >= (FREQ_GO-1) && max_norm_index <= (FREQ_GO+1)){
+							command=GO_COMMAND;
+							break;
+			}
 			if(max_norm_index >= (FREQ_LEFT-1) && max_norm_index <= (FREQ_LEFT+1)){
 				command=LEFT;
-				old_command=LEFT;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_RIGHT-1) && max_norm_index <= (FREQ_RIGHT+1)){
 				command=RIGHT;
-				old_command=RIGHT;
 				break;
 			}
 			else if(max_norm_index >= (FREQ_BACK-1) && max_norm_index <= (FREQ_BACK+1)){
-				command=REVERSE_WAY;
+				command=REVERSE_WAY_COMMAND;
 
 				break;
 			}
@@ -99,10 +93,6 @@ void sound_for_command(float* data){
 				old_command=TURN_ARC_LEFT;
 				break;
 			}
-			else if(max_norm_index >= (FREQ_RUN-1) && max_norm_index <= (FREQ_RUN+1)){
-				command=RUN_COMMAND;
-				break;
-						}
 			else{
 				command=NOTHING;
 				break;
@@ -128,6 +118,7 @@ void sound_for_command(float* data){
 
 		case NOT_HEARING:
 			command=NOTHING;
+			old_command=NOTHING;
 			break;
 
 	}

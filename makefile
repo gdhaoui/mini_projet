@@ -6,7 +6,7 @@
 PROJECT = Noisy
 
 #Define path to the e-puck2_main-processor folder
-GLOBAL_PATH = C:\Users\yassi\OneDrive\Desktop\robotique\lib\e-puck2_main-processor
+GLOBAL_PATH = 
 
 #Source files to include
 CSRC += ./main.c \

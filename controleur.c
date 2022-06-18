@@ -1,12 +1,10 @@
-#include <controleur.h>
-#include "ch.h"
-#include "hal.h"
-#include <math.h>
-#include <motors.h>
+#include "controleur.h"
+#include "math.h"
+#include "motors.h"
 #include "audio_processing.h"
 
 #define RADIUS_R			20.0f
-#define TEST_STEPS 			500
+#define TEST_STEPS 			1000
 #define MAX_NB_INSTRUCTION  200
 #define PI                  3.1415926536f
 #define WHEEL_DISTANCE      5.35f    //cm
@@ -33,20 +31,7 @@ void move_forward_steps(int steps)
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
 }
-void move_backward_steps(int steps)
-{
-	left_motor_set_pos(0);
-	right_motor_set_pos(0);
-	left_motor_set_speed(-DEFAULT_SPEED) ;
-	right_motor_set_speed(-DEFAULT_SPEED);
-	while(left_motor_get_pos()>steps){
-		chThdSleepMilliseconds(10);
-	}
-	left_motor_set_speed(0) ;
-	right_motor_set_speed(0);
-	left_motor_set_pos(0);
-	right_motor_set_pos(0);
-}
+
 void move_forward(void)
 {
 	left_motor_set_speed(DEFAULT_SPEED);
@@ -89,8 +74,8 @@ void turn_right_arc_steps(int steps_r,int steps_l, float radius, int speed)
 	float r2=radius-WHEEL_DISTANCE/2;
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
-	left_motor_set_speed(speed*r1/r2) ;
-	right_motor_set_speed(speed);
+	left_motor_set_speed(speed) ;
+	right_motor_set_speed(speed*r2/r1);
 	while((fabs(left_motor_get_pos())<steps_l)& (fabs(right_motor_get_pos())<steps_r)){
 		chThdSleepMilliseconds(10);
 	}
@@ -109,15 +94,15 @@ void motor_stop(void)
 
 void turn_right(void)
 {
-	left_motor_set_speed(200);
-	right_motor_set_speed(-200);
+	left_motor_set_speed(DEFAULT_SPEED/4);
+	right_motor_set_speed(-DEFAULT_SPEED/4);
 }
 void turn_left(void)
 {
-	left_motor_set_speed(-200);
-	right_motor_set_speed(+200);
+	left_motor_set_speed(-DEFAULT_SPEED/4);
+	right_motor_set_speed(+DEFAULT_SPEED/4);
 }
-void turn_left_steps_return(int steps_l, int steps_r){
+void turn_left_steps(int steps_l, int steps_r){
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
 	left_motor_set_speed(-200) ;
@@ -130,7 +115,7 @@ void turn_left_steps_return(int steps_l, int steps_r){
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
 }
-void turn_right_steps_return(int steps_l, int steps_r){
+void turn_right_steps(int steps_l, int steps_r){
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
 	left_motor_set_speed(200) ;
@@ -164,8 +149,7 @@ static THD_FUNCTION(controleur_thd,arg)
 	chRegSetThreadName(__FUNCTION__);
 	int32_t command_tab[MAX_NB_INSTRUCTION]={0};
 	int num_command=-1;
-	static float radius=RADIUS_R;
-	int incrementor=0;
+	float radius=RADIUS_R;
 	while(1){
 		switch(state_robot)
 		{
@@ -205,10 +189,10 @@ static THD_FUNCTION(controleur_thd,arg)
 				}
 
 		case STOP_STATE_ROBOT:
-				if(get_command()==RUN_COMMAND)
+				if(get_command()==GO_COMMAND)
 				{
 					num_command++;
-					command_tab[num_command]=RUN_COMMAND;
+					command_tab[num_command]=GO_COMMAND;
 					move_forward();
 					set_state_micro(GO_MICRO_STATE);
 					state_robot=GO_STATE_ROBOT;
@@ -234,7 +218,7 @@ static THD_FUNCTION(controleur_thd,arg)
 				}
 
 
-				else if(get_command()==REVERSE_WAY)
+				else if(get_command()==REVERSE_WAY_COMMAND)
 				{
 					turn_right_angle(180);
 					motor_stop();
@@ -257,7 +241,8 @@ static THD_FUNCTION(controleur_thd,arg)
 				}
 				else if(get_command()==TURN_ARC_RIGHT)
 				{
-
+					num_command++;
+					command_tab[num_command]=TURN_ARC_LEFT;
 					turn_right_arc_steps(TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,radius,(DEFAULT_SPEED/4)*3);
 					set_state_micro(ARC_MICRO_STATE);
 				    state_robot=ARC_STATE_ROBOT;
@@ -274,18 +259,12 @@ static THD_FUNCTION(controleur_thd,arg)
 
 				if(get_command()==CONTINUE)
 				{
-					//num_command++;
-					//command_tab[num_command]=radius;
-					//command_tab[num_command+1]=left_motor_get_pos();
-					//command_tab[num_command+2]=right_motor_get_pos();
-					//num_command+=2;
 					if(get_old_command()==TURN_ARC_LEFT)
 					{
 						num_command++;
-						command_tab[num_command]=TURN_ARC_RIGHT;
-						num_command++;
 						command_tab[num_command]=radius;
 						turn_left_arc(radius);
+						radius=RADIUS_R;
 						set_state_micro(GO_MICRO_STATE);
 						state_robot=GO_STATE_ROBOT;
 						break;
@@ -293,10 +272,9 @@ static THD_FUNCTION(controleur_thd,arg)
 					else if(get_old_command()==TURN_ARC_RIGHT)
 					{
 						num_command++;
-						command_tab[num_command]=TURN_ARC_LEFT;
-						num_command++;
 						command_tab[num_command]=radius;
 						turn_right_arc(radius);
+						radius=RADIUS_R;
 						set_state_micro(GO_MICRO_STATE);
 						state_robot=GO_STATE_ROBOT;
 						break;
@@ -307,8 +285,8 @@ static THD_FUNCTION(controleur_thd,arg)
 					if(get_old_command()==TURN_ARC_LEFT)
 					{
 						turn_left_arc_steps(TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,radius,-(DEFAULT_SPEED/4)*3);
-						radius-=2;
 						motor_stop();
+						radius-=6;
 						chThdSleepMilliseconds(100);
 						turn_left_arc_steps(TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,radius,(DEFAULT_SPEED/4)*3);
 						state_robot=ARC_STATE_ROBOT;
@@ -317,8 +295,8 @@ static THD_FUNCTION(controleur_thd,arg)
 					else if(get_old_command()==TURN_ARC_RIGHT)
 					{
 						turn_right_arc_steps(TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,radius,-(DEFAULT_SPEED/4)*3);
-						radius-=2;
 						motor_stop();
+						radius-=6;
 						chThdSleepMilliseconds(100);
 						turn_right_arc_steps(TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,radius,-(DEFAULT_SPEED/4)*3);
 					    state_robot=ARC_STATE_ROBOT;
@@ -331,7 +309,8 @@ static THD_FUNCTION(controleur_thd,arg)
 					if(get_old_command()==TURN_ARC_LEFT)
 					{
 						turn_left_arc_steps(TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,radius,-(DEFAULT_SPEED/4)*3);
-						radius+=2;
+						motor_stop();
+						radius+=6;
 						turn_left_arc_steps(TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,radius,(DEFAULT_SPEED/4)*3);
 						state_robot=ARC_STATE_ROBOT;
 						break;
@@ -339,7 +318,8 @@ static THD_FUNCTION(controleur_thd,arg)
 					else if(get_old_command()==TURN_ARC_RIGHT)
 					{
 						turn_right_arc_steps(TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,radius,-(DEFAULT_SPEED/4)*3);
-						radius+=2;
+						motor_stop();
+						radius+=6;
 						turn_right_arc_steps(TEST_STEPS*(radius+WHEEL_DISTANCE/2)/radius,TEST_STEPS*(radius-WHEEL_DISTANCE/2)/radius,radius,(DEFAULT_SPEED/4)*3);
 						state_robot=ARC_STATE_ROBOT;
 						break;
@@ -353,14 +333,14 @@ static THD_FUNCTION(controleur_thd,arg)
 				{
 					if(command_tab[num_command]==LEFT){
 						command_tab[num_command]=NOTHING;
-						turn_left_steps_return(command_tab[num_command+2],command_tab[num_command+1]);
+						turn_left_steps(command_tab[num_command+2],command_tab[num_command+1]);
 						command_tab[num_command+1]=NOTHING;
 						command_tab[num_command+2]=NOTHING;
 						num_command-=3;
 					}
 					else if(command_tab[num_command]==RIGHT){
 						command_tab[num_command]=NOTHING;
-						turn_right_steps_return(command_tab[num_command+2],command_tab[num_command+1]);
+						turn_right_steps(command_tab[num_command+2],command_tab[num_command+1]);
 						command_tab[num_command+1]=NOTHING;
 						command_tab[num_command+2]=NOTHING;
 						num_command-=3;
@@ -380,7 +360,7 @@ static THD_FUNCTION(controleur_thd,arg)
 						command_tab[num_command+3]=NOTHING;
 						num_command-=3;
 					}
-					else if(command_tab[num_command]==GO_COMMAND || command_tab[num_command]==RUN_COMMAND){
+					else if(command_tab[num_command]==GO_COMMAND){
 						command_tab[num_command]=NOTHING;
 						move_forward_steps(command_tab[num_command+2]);
 						command_tab[num_command+1]=NOTHING;
@@ -394,7 +374,9 @@ static THD_FUNCTION(controleur_thd,arg)
 				}
 				else{
 						motor_stop();
-						turn_right_angle(170);
+						turn_right_angle(180);
+						num_command=-1;
+						radius=RADIUS_R;
 						set_state_micro(GO_MICRO_STATE);
 						state_robot=GO_STATE_ROBOT;
 						chThdSleepMilliseconds(5000);

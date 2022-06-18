@@ -1,19 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
-#include <usbcfg.h>
-#include <main.h>
-#include <chprintf.h>
-#include <motors.h>
-#include <audio/microphone.h>
-#include <leds.h>
-#include <controleur.h>
-#include <audio_processing.h>
-#include <arm_math.h>
+#include "motors.h"
+#include "controleur.h"
+#include "audio_processing.h"
+#include "audio/microphone.h"
 
 int main(void)
 {
